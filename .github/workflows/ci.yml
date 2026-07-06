@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  generate-app:
+    name: Generate app from template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - name: Install Rails
+        run: gem install rails --no-document
+
+      - name: Generate a new app from the template
+        working-directory: ${{ runner.temp }}
+        env:
+          RAILS_TEMPLATE: ${{ github.workspace }}/template.rb
+        run: rails new kickoff_test -m "$RAILS_TEMPLATE"
+
+      - name: Boot check (routes + zeitwerk)
+        working-directory: ${{ runner.temp }}/kickoff_test
+        run: |
+          bin/rails routes > /dev/null
+          bin/rails zeitwerk:check
+
+      - name: Compile Tailwind CSS
+        working-directory: ${{ runner.temp }}/kickoff_test
+        run: bin/rails tailwindcss:build
+
+      - name: Smoke test scaffold generator
+        working-directory: ${{ runner.temp }}/kickoff_test
+        run: |
+          bin/rails generate scaffold Post title:string body:text published:boolean
+          bin/rails db:migrate

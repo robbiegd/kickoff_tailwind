@@ -5,25 +5,23 @@ Author URI: https://web-crunch.com
 Instructions: $ rails new myapp -d <postgresql, mysql, sqlite3> -m template.rb
 =end
 
-def source_paths
-  [File.expand_path(File.dirname(__FILE__))]
+# Prepend this template's directory so copy_file/directory find our files,
+# while keeping Rails' own generator source paths intact.
+def add_template_to_source_path
+  source_paths.unshift(File.expand_path(File.dirname(__FILE__)))
 end
 
 def add_gems
-  gem 'devise', '~> 4.8', '>= 4.8.1'
-  gem 'friendly_id', '~> 5.4', '>= 5.4.2'
-  gem 'cssbundling-rails'
-  gem 'name_of_person'
-  gem 'sidekiq', '~> 6.5', '>= 6.5.4'
-  gem 'stripe'
+  gem "devise", "~> 4.9"
+  gem "friendly_id", "~> 5.5"
+  gem "name_of_person", "~> 1.1"
+  gem "stripe"
+  gem "tailwindcss-rails", "~> 4.0"
 end
 
 def add_tailwind
-  rails_command "css:install:tailwind"
-  # remove tailwind config that gets installed and swap for custom config
-  remove_file "tailwind.config.js"
+  rails_command "tailwindcss:install"
 end
-
 
 def add_storage_and_rich_text
   rails_command "active_storage:install"
@@ -37,6 +35,14 @@ def add_users
   # Configure Devise
   environment "config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }",
               env: 'development'
+
+  # Use Turbo-compatible response statuses (Devise 4.9+ supports Turbo natively)
+  gsub_file "config/initializers/devise.rb",
+    "# config.responder.error_status = :unprocessable_entity",
+    "config.responder.error_status = :unprocessable_entity"
+  gsub_file "config/initializers/devise.rb",
+    "# config.responder.redirect_status = :see_other",
+    "config.responder.redirect_status = :see_other"
 
   route "root to: 'home#index'"
 
@@ -58,55 +64,31 @@ def copy_templates
   directory "lib", force: true
 end
 
-def add_sidekiq
-  environment "config.active_job.queue_adapter = :sidekiq"
-
-  insert_into_file "config/routes.rb",
-    "require 'sidekiq/web'\n\n",
-    before: "Rails.application.routes.draw do"
-
-  content = <<-RUBY
-    authenticate :user, lambda { |u| u.admin? } do
-      mount Sidekiq::Web => '/sidekiq'
-    end
-  RUBY
-  insert_into_file "config/routes.rb", "#{content}\n\n", after: "Rails.application.routes.draw do\n"
-end
-
 def add_friendly_id
   generate "friendly_id"
 end
 
-def add_tailwind_plugins
-  run "yarn add -D @tailwindcss/typography @tailwindcss/forms @tailwindcss/aspect-ratio @tailwindcss/line-clamp"
-
-  copy_file "tailwind.config.js"
-end
-
 # Main setup
-source_paths
+add_template_to_source_path
 
 add_gems
 
 after_bundle do
   add_tailwind
-  add_tailwind_plugins
   add_storage_and_rich_text
   add_users
-  add_sidekiq
   copy_templates
   add_friendly_id
 
-  # Migrate
-  rails_command "db:create"
-  rails_command "db:migrate"
+  # Create and migrate the database
+  rails_command "db:prepare"
 
   git :init
   git add: "."
   git commit: %Q{ -m "Initial commit" }
 
   say
-  say "Kickoff app successfully created! 👍", :green
+  say "Kickoff app successfully created! \u{1F44D}", :green
   say
   say "Switch to your app by running:"
   say "$ cd #{app_name}", :yellow

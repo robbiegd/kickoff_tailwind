@@ -9,7 +9,7 @@
       <%= render "shared/navbar" %>
     </header>
 
-    <main class="flex-grow">
+    <main class="grow">
       <%= content_for?(:content) ? yield(:content) : yield %>
     </main>
   </body>

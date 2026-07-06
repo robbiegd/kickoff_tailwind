@@ -32,7 +32,7 @@ module ApplicationHelper
     variant = options[:variant]
     theme = options[:theme]
 
-    style_button(variant, theme_button(theme))
+    [style_button(variant, theme_button(theme)), options[:extended_classes]].compact.join(" ")
   end
 
   def theme_button(theme)

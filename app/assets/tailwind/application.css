@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* First-party plugins bundled with the Tailwind CSS v4 standalone CLI.
+   aspect-ratio and line-clamp are part of Tailwind core as of v3.3+. */
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";

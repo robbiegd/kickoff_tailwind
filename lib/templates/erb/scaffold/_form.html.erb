@@ -12,23 +12,26 @@
 <%% end %>
 
 <% attributes.each do |attribute| -%>
+<% if attribute.password_digest? -%>
   <div class="mb-6">
-    <% if attribute.password_digest? -%>
-      <%%= form.label :password, class: label_class %>
-      <%%= form.password_field :password, class: input_class %>
-    </div>
+    <%%= form.label :password, class: label_class %>
+    <%%= form.password_field :password, class: input_class %>
+  </div>
 
+  <div class="mb-6">
     <%%= form.label :password_confirmation, class: label_class %>
     <%%= form.password_field :password_confirmation, class: input_class %>
-  <% else -%>
+  </div>
+<% else -%>
+  <div class="mb-6">
     <%%= form.label :<%= attribute.column_name %>, class: label_class %>
-    <% if attribute.field_type == "checkbox" -%>
-      <%%= form.<%= attribute.field_type %> :<%= attribute.column_name %>, class: input_checkbox %>
+    <% if [:check_box, :checkbox].include?(attribute.field_type) -%>
+    <%%= form.<%= attribute.field_type %> :<%= attribute.column_name %>, class: checkbox_class %>
     <% else -%>
-      <%%= form.<%= attribute.field_type %> :<%= attribute.column_name %>, class: input_class %>
+    <%%= form.<%= attribute.field_type %> :<%= attribute.column_name %>, class: input_class %>
     <% end -%>
-  <% end -%>
-</div>
+  </div>
+<% end -%>
 <% end -%>
 
 <%%= form.submit class: button_class(theme: 'primary') %>
