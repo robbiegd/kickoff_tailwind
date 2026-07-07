@@ -40,3 +40,39 @@ jobs:
         run: |
           bin/rails generate scaffold Post title:string body:text published:boolean
           bin/rails db:migrate
+
+  generate-app-react:
+    name: Generate app with React (esbuild)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Rails
+        run: gem install rails --no-document
+
+      - name: Generate a new app with esbuild + React
+        working-directory: ${{ runner.temp }}
+        env:
+          RAILS_TEMPLATE: ${{ github.workspace }}/template.rb
+        run: rails new kickoff_react -j esbuild -m "$RAILS_TEMPLATE"
+
+      - name: Boot check (routes + zeitwerk)
+        working-directory: ${{ runner.temp }}/kickoff_react
+        run: |
+          bin/rails routes > /dev/null
+          bin/rails zeitwerk:check
+
+      - name: Build assets and verify React is bundled
+        working-directory: ${{ runner.temp }}/kickoff_react
+        run: |
+          yarn build
+          bin/rails tailwindcss:build
+          grep -q "react-dom" app/assets/builds/application.js

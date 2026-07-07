@@ -32,6 +32,22 @@ rails new sample_app -m template.rb
 
 Prefer PostgreSQL? Add `-d postgresql`.
 
+### Want React?
+
+Generate your app with a JS bundler and the template wires React up automatically:
+
+```bash
+rails new sample_app -j esbuild -m template.rb
+```
+
+You get `react`/`react-dom`, an `app/javascript/components/` directory, esbuild configured with the automatic JSX runtime, and a Turbo-aware mounting system that cleanly mounts/unmounts components across Turbo navigations. Render a component from any ERB view:
+
+```erb
+<div data-react-component="HelloReact" data-react-props='{"name": "Rails"}'></div>
+```
+
+Register new components in `app/javascript/components/index.jsx`. React coexists with Hotwire — use Turbo/Stimulus for most of the app and reach for React where you need rich client-side interactivity. The default (no `-j` flag) setup remains 100% Node-free.
+
 ### Once installed what do I get?
 
 - [Tailwind CSS v4](https://tailwindcss.com) with the first-party `@tailwindcss/forms` and `@tailwindcss/typography` plugins enabled via the CSS-first `@plugin` directive in `app/assets/tailwind/application.css`. (`line-clamp` and `aspect-ratio` utilities are part of Tailwind core now.)
@@ -57,7 +73,7 @@ This runs the Rails server and the Tailwind watcher via `Procfile.dev`.
 
 - Ruby 3.2+ (3.4 recommended)
 - Rails 8.0+
-- No Node.js, no Yarn, no Redis
+- No Node.js, no Yarn, no Redis (Node is only needed if you opt into React via `-j esbuild`)
 
 ### Credits
 

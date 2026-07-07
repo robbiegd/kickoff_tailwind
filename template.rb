@@ -3,6 +3,7 @@ Template Name: Kickoff - Tailwind CSS
 Author: Andy Leverenz
 Author URI: https://web-crunch.com
 Instructions: $ rails new myapp -d <postgresql, mysql, sqlite3> -m template.rb
+              Add -j esbuild to also get React wired up.
 =end
 
 # Prepend this template's directory so copy_file/directory find our files,
@@ -68,6 +69,42 @@ def add_friendly_id
   generate "friendly_id"
 end
 
+# When the app is generated with a JS bundler (e.g. -j esbuild), wire up
+# React with a Turbo-aware component mounting system. The default
+# importmap setup stays Node-free and skips this entirely.
+def add_react
+  return unless File.exist?("package.json")
+
+  package_add = if File.exist?("yarn.lock")
+    "yarn add"
+  elsif File.exist?("bun.lock") || File.exist?("bun.lockb")
+    "bun add"
+  else
+    "npm install"
+  end
+  run "#{package_add} react react-dom"
+
+  # Use React's automatic JSX runtime so components don't need `import React`
+  gsub_file "package.json",
+    "esbuild app/javascript/*.*",
+    "esbuild app/javascript/*.* --jsx=automatic"
+
+  copy_file "react/components/index.jsx", "app/javascript/components/index.jsx"
+  copy_file "react/components/hello_react.jsx", "app/javascript/components/hello_react.jsx"
+
+  append_to_file "app/javascript/application.js", %(import "./components"\n)
+
+  # Bundled apps load the compiled bundle instead of import maps
+  gsub_file "app/views/shared/_head.html.erb",
+    "<%= javascript_importmap_tags %>",
+    %(<%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>)
+
+  # Show off a live React component on the homepage
+  insert_into_file "app/views/home/index.html.erb",
+    %(  <div class="mt-6 p-4 rounded-lg bg-indigo-50" data-react-component="HelloReact" data-react-props='{"name": "React"}'></div>\n\n),
+    before: %(  <p class="text-xs text-gray-600 max-w-lg mt-6">)
+end
+
 # Main setup
 add_template_to_source_path
 
@@ -78,6 +115,7 @@ after_bundle do
   add_storage_and_rich_text
   add_users
   copy_templates
+  add_react
   add_friendly_id
 
   # Create and migrate the database
